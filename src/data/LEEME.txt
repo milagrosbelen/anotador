@@ -1,0 +1,2 @@
+Integrante B: crear acá faltantes.ts
+(type Faltante + array estático de 8 a 12 ítems)
