@@ -1,16 +1,16 @@
 # Anotador
 
-App móvil para que un local (kiosco, veterinaria, bebidas, recambios) vea
+App para que un local (kiosco, veterinaria, bebidas, recambios) vea
 lo que hay que pedirle al proveedor: qué falta, cuánto y a quién.
 
-Proyecto ABP — Aplicación Móvil. Primera versión (Unidad I): listado y ficha
-con datos estáticos. Sin backend ni base de datos.
+Proyecto ABP — Aplicación Móvil. Unidad I: listado y ficha con datos estáticos.
+Sin backend ni base de datos.
 
 ## Integrantes
 
-- Milagros Belén (C) — proyecto Expo, Navigation Stack, GitHub
-- (A) — `FaltanteCard` y pantalla Home
-- (B) — `faltantes.ts` y pantalla de detalle
+- (C) Milagros Pedrasa
+- (A) Florencia Palacios
+- (B) Renato Ruiz
 
 ## Features
 
@@ -28,8 +28,11 @@ React Native · Expo SDK · TypeScript · styled-components · Navigation Stack
 ## Cómo correr
 
 ```bash
+git clone https://github.com/milagrosbelen/anotador.git
+cd anotador
 npm install
 npx expo start
 ```
 
-Abrir con Expo Go en el celular o un emulador.
+A: `src/components/FaltanteCard.tsx` y pantalla Home.
+B: `src/data/faltantes.ts` y pantalla de detalle.
