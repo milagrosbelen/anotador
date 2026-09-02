@@ -6,7 +6,7 @@ import { RootStackParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Integrante C: acá se arma el Stack (Home → Detalle).
+
 export function AppNavigator() {
   return (
     <NavigationContainer>
