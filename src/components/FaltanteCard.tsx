@@ -2,16 +2,26 @@ import React from "react";
 import { ImageSourcePropType } from "react-native";
 import styled from "styled-components/native";
 
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../types";
+import { useNavigation } from "@react-navigation/native";
+
 type FaltanteCardProps = {
+  id: number;
   imagen: ImageSourcePropType;
   nombre: string;
   cantidad: number;
   unidad: string;
   proveedor: string;
-  estado: "Falta pedir" | "Ya pedido";
+  estado: string;
 };
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Home"
+>;
 
 export default function FaltanteCard({
+  id,
   imagen,
   nombre,
   cantidad,
@@ -19,10 +29,15 @@ export default function FaltanteCard({
   proveedor,
   estado,
 }: FaltanteCardProps) {
+  
+  const navigation = useNavigation<NavigationProp>();
+
   const estaPedido = estado === "Ya pedido";
 
   return (
-    <Card>
+    <Card
+      onPress={() => navigation.navigate("Detalle", { id })}
+    >
       <Imagen source={imagen} />
 
       <Info>
@@ -44,7 +59,7 @@ export default function FaltanteCard({
   );
 }
 
-const Card = styled.View`
+const Card = styled.Pressable`
   flex-direction: row;
   align-items: center;
   background-color: #ffffff;
