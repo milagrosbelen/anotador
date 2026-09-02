@@ -1,2 +1,0 @@
-Integrante A: crear acá FaltanteCard.tsx
-(card reutilizable con props: imagen, nombre, cantidad, proveedor, estado)
