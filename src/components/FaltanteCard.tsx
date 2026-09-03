@@ -1,6 +1,7 @@
 import React from "react";
 import { ImageSourcePropType } from "react-native";
 import styled from "styled-components/native";
+import { EstadoFaltante } from "../data/faltantes";
 
 type FaltanteCardProps = {
   imagen: ImageSourcePropType;
@@ -8,7 +9,8 @@ type FaltanteCardProps = {
   cantidad: number;
   unidad: string;
   proveedor: string;
-  estado: "Falta pedir" | "Ya pedido";
+  estado: EstadoFaltante;
+  onPress: () => void;
 };
 
 export default function FaltanteCard({
@@ -18,12 +20,17 @@ export default function FaltanteCard({
   unidad,
   proveedor,
   estado,
+  onPress,
 }: FaltanteCardProps) {
   const estaPedido = estado === "Ya pedido";
 
   return (
-    <Card>
-      <Imagen source={imagen} />
+    <Card
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver ficha de ${nombre}`}
+    >
+      <Imagen source={imagen} resizeMode="cover" />
 
       <Info>
         <Nombre>{nombre}</Nombre>
@@ -36,15 +43,13 @@ export default function FaltanteCard({
       </Info>
 
       <Estado $estaPedido={estaPedido}>
-        <EstadoTexto $estaPedido={estaPedido}>
-          {estado}
-        </EstadoTexto>
+        <EstadoTexto $estaPedido={estaPedido}>{estado}</EstadoTexto>
       </Estado>
     </Card>
   );
 }
 
-const Card = styled.View`
+const Card = styled.Pressable`
   flex-direction: row;
   align-items: center;
   background-color: #ffffff;
@@ -102,6 +107,5 @@ const Estado = styled.View<{ $estaPedido: boolean }>`
 
 const EstadoTexto = styled.Text<{ $estaPedido: boolean }>`
   font-size: 14px;
-  color: ${({ $estaPedido }) =>
-    $estaPedido ? "#34734A" : "#493B12"};
+  color: ${({ $estaPedido }) => ($estaPedido ? "#34734A" : "#493B12")};
 `;

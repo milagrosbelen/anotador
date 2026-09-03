@@ -6,11 +6,16 @@ import { RootStackParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Integrante C: acá se arma el Stack (Home → Detalle).
 export function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator>
+      <Stack.Navigator
+        screenOptions={{
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "#F7F7F5" },
+          headerTintColor: "#202426",
+        }}
+      >
         <Stack.Screen
           name="Home"
           component={HomeScreen}
