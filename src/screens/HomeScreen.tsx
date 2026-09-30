@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -7,11 +6,13 @@ import { RootStackParamList } from "../types";
 import FaltanteCard from "../components/FaltanteCard";
 import { Chip } from "../components/Chip";
 import { FALTANTES, PROVEEDORES } from "../data/faltantes";
+import { useFiltroStore } from "../store/useFiltroStore";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export function HomeScreen({ navigation }: Props) {
-  const [proveedorActivo, setProveedorActivo] = useState("Todos");
+  const proveedorActivo = useFiltroStore((state) => state.proveedorActivo);
+  const setProveedorActivo = useFiltroStore((state) => state.setProveedorActivo);
 
   const faltantesVisibles =
     proveedorActivo === "Todos"
