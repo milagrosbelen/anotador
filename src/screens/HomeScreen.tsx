@@ -5,29 +5,72 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types";
 import FaltanteCard from "../components/FaltanteCard";
 import { Chip } from "../components/Chip";
-import { FALTANTES, PROVEEDORES } from "../data/faltantes";
+import { PROVEEDORES } from "../data/faltantes";
 import { useFiltroStore } from "../store/useFiltroStore";
+import { useFaltantes } from "../hooks/useFaltantes";
+import { getImagenUri, useConfigStore } from "../store/useConfigStore";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export function HomeScreen({ navigation }: Props) {
-  const proveedorActivo = useFiltroStore((state) => state.proveedorActivo);
-  const setProveedorActivo = useFiltroStore((state) => state.setProveedorActivo);
+  const proveedorActivo = useFiltroStore(
+    (state) => state.proveedorActivo
+  );
+
+  const setProveedorActivo = useFiltroStore(
+    (state) => state.setProveedorActivo
+  );
+
+  const apiUrl = useConfigStore(
+    (state) => state.apiUrl
+  );
+
+  const {
+    data: faltantes = [],
+    isLoading,
+    isError,
+  } = useFaltantes();
 
   const faltantesVisibles =
     proveedorActivo === "Todos"
-      ? FALTANTES
-      : FALTANTES.filter((item) => item.proveedor === proveedorActivo);
+      ? faltantes
+      : faltantes.filter(
+          (faltante) => faltante.proveedor === proveedorActivo
+        );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }}>
+        <Mensaje>Cargando faltantes...</Mensaje>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }}>
+        <Mensaje>No se pudieron cargar los faltantes.</Mensaje>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }}>
       <Container>
         <Titulo>Anotador</Titulo>
-        <Subtitulo>Lo que hay que pedir el lunes.</Subtitulo>
+
+        <Subtitulo>
+          Lo que hay que pedir el lunes.
+        </Subtitulo>
+
         <Resumen>
           {faltantesVisibles.length}{" "}
-          {faltantesVisibles.length === 1 ? "faltante" : "faltantes"}
-          {proveedorActivo !== "Todos" ? ` · ${proveedorActivo}` : ""}
+          {faltantesVisibles.length === 1
+            ? "faltante"
+            : "faltantes"}
+          {proveedorActivo !== "Todos"
+            ? ` · ${proveedorActivo}`
+            : ""}
         </Resumen>
 
         <ChipsContainer
@@ -48,20 +91,33 @@ export function HomeScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 30 }}
         >
-          {faltantesVisibles.map((faltante) => (
-            <FaltanteCard
-              key={faltante.id}
-              imagen={faltante.imagen}
-              nombre={faltante.nombre}
-              cantidad={faltante.cantidad}
-              unidad={faltante.unidad}
-              proveedor={faltante.proveedor}
-              estado={faltante.estado}
-              onPress={() =>
-                navigation.navigate("Detalle", { id: faltante.id })
-              }
-            />
-          ))}
+          {faltantesVisibles.map((faltante) => {
+            const imagenUri = getImagenUri(
+              apiUrl,
+              faltante.imagenUrl
+            );
+
+            return (
+              <FaltanteCard
+                key={faltante.id}
+                imagen={
+                  imagenUri
+                    ? { uri: imagenUri }
+                    : require("../../assets/icon.png")
+                }
+                nombre={faltante.nombre}
+                cantidad={faltante.cantidad}
+                unidad={faltante.unidad}
+                proveedor={faltante.proveedor}
+                estado={faltante.estado}
+                onPress={() =>
+                  navigation.navigate("Detalle", {
+                    id: faltante.id,
+                  })
+                }
+              />
+            );
+          })}
 
           {faltantesVisibles.length === 0 && (
             <Vacio>
@@ -116,6 +172,13 @@ const Lista = styled.ScrollView`
 `;
 
 const Vacio = styled.Text`
+  font-size: 16px;
+  color: #687078;
+  text-align: center;
+  margin-top: 40px;
+`;
+
+const Mensaje = styled.Text`
   font-size: 16px;
   color: #687078;
   text-align: center;
