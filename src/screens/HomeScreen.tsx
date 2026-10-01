@@ -5,7 +5,6 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types";
 import FaltanteCard from "../components/FaltanteCard";
 import { Chip } from "../components/Chip";
-import { PROVEEDORES } from "../data/faltantes";
 import { useFiltroStore } from "../store/useFiltroStore";
 import { useFaltantes } from "../hooks/useFaltantes";
 import { getImagenUri, useConfigStore } from "../store/useConfigStore";
@@ -30,6 +29,11 @@ export function HomeScreen({ navigation }: Props) {
     isLoading,
     isError,
   } = useFaltantes();
+
+  const proveedores = [
+    "Todos",
+    ...Array.from(new Set(faltantes.map((faltante) => faltante.proveedor))),
+  ];
 
   const faltantesVisibles =
     proveedorActivo === "Todos"
@@ -77,7 +81,7 @@ export function HomeScreen({ navigation }: Props) {
           horizontal
           showsHorizontalScrollIndicator={false}
         >
-          {PROVEEDORES.map((proveedor) => (
+          {proveedores.map((proveedor) => (
             <Chip
               key={proveedor}
               label={proveedor}

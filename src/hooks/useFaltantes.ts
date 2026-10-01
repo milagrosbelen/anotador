@@ -30,6 +30,8 @@ export function useFaltantes() {
 
         const data: FaltanteApi[] = await response.json();
 
+        useErrorStore.getState().limpiarError();
+
         return data;
       } catch (error) {
         useErrorStore
