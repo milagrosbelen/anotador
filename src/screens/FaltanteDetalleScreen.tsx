@@ -4,6 +4,7 @@ import styled from "styled-components/native";
 
 import { RootStackParamList } from "../types";
 import { getFaltanteById } from "../data/faltantes";
+import { UbicacionLocal } from "../components/UbicacionLocal";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Detalle">;
 
@@ -23,13 +24,17 @@ export function FaltanteDetalleScreen({ route }: Props) {
   const estaPedido = faltante.estado === "Ya pedido";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }} edges={["bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F7F7F5" }}
+      edges={["bottom"]}
+    >
       <Scroll showsVerticalScrollIndicator={false}>
         <Imagen source={faltante.imagen} resizeMode="cover" />
 
         <Contenedor>
           <FilaEncabezado>
             <Nombre>{faltante.nombre}</Nombre>
+
             <Estado $estaPedido={estaPedido}>
               <EstadoTexto $estaPedido={estaPedido}>
                 {faltante.estado}
@@ -49,6 +54,8 @@ export function FaltanteDetalleScreen({ route }: Props) {
           <Seccion>
             <Etiqueta>Dónde está</Etiqueta>
             <Valor>{faltante.ubicacion}</Valor>
+
+            <UbicacionLocal />
           </Seccion>
 
           <Seccion>
