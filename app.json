@@ -27,6 +27,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Anotador necesita acceder a tus fotos para mostrar una imagen en la ficha del faltante.",
+          "cameraPermission": false
+        }
+      ]
+    ]
   }
 }

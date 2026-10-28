@@ -6,8 +6,10 @@ import { RootStackParamList } from "../types";
 import FaltanteCard from "../components/FaltanteCard";
 import { Chip } from "../components/Chip";
 import { useFiltroStore } from "../store/useFiltroStore";
+import { getFaltanteById } from "../data/faltantes";
 import { useFaltantes } from "../hooks/useFaltantes";
 import { getImagenUri, useConfigStore } from "../store/useConfigStore";
+import { useFotoStore } from "../store/useFotoStore";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -23,6 +25,8 @@ export function HomeScreen({ navigation }: Props) {
   const apiUrl = useConfigStore(
     (state) => state.apiUrl
   );
+
+  const fotosGuardadas = useFotoStore((state) => state.fotos);
 
   const {
     data: faltantes = [],
@@ -96,18 +100,22 @@ export function HomeScreen({ navigation }: Props) {
           contentContainerStyle={{ paddingBottom: 30 }}
         >
           {faltantesVisibles.map((faltante) => {
+            const fotoGuardada = fotosGuardadas[faltante.id];
             const imagenUri = getImagenUri(
               apiUrl,
               faltante.imagenUrl
             );
+            const imagenLocal = getFaltanteById(faltante.id)?.imagen;
 
             return (
               <FaltanteCard
                 key={faltante.id}
                 imagen={
-                  imagenUri
-                    ? { uri: imagenUri }
-                    : require("../../assets/icon.png")
+                  fotoGuardada
+                    ? { uri: fotoGuardada }
+                    : imagenUri
+                      ? { uri: imagenUri }
+                      : imagenLocal ?? require("../../assets/icon.png")
                 }
                 nombre={faltante.nombre}
                 cantidad={faltante.cantidad}

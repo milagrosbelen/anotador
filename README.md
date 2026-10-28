@@ -19,13 +19,15 @@ ficha con datos estáticos. Sin backend ni base de datos.
 ## Features
 
 Son 3 integrantes, así que el alcance mínimo de la **versión final** es
-de 4 features. En esta primera entrega ya hay 3 funcionando.
+de 4 features.
 
 | Feature | Estado |
 |---|---|
 | Consultar el listado de faltantes | Implementada |
 | Consultar la ficha de un faltante | Implementada |
 | Filtrar faltantes por proveedor | Implementada |
+| Elegir una foto de la galería | Implementada |
+| Registrar la ubicación GPS del local | Implementada |
 | Marcar un faltante como ya pedido | Pendiente |
 
 **Consultar el listado de faltantes.** La Home muestra los productos que
@@ -37,6 +39,14 @@ está en el listado.
 
 **Filtrar faltantes por proveedor.** Los chips de la Home dejan ver solo
 los faltantes de un proveedor, o todos.
+
+**Elegir una foto de la galería.** En la ficha se elige una foto y, con
+Guardar, queda en ese faltante: se ve arriba de la ficha y también en su card
+del listado. Si salís sin guardar, se mantiene la foto anterior. Si el
+teléfono no da permiso, un cartel avisa y abre Ajustes.
+
+**Registrar la ubicación GPS del local.** En la ficha, dentro de «Dónde está»,
+el botón «Estoy en el local» anota las coordenadas y la dirección del lugar.
 
 **Marcar un faltante como ya pedido.** Queda para una unidad siguiente:
 hace falta manejar estado (y más adelante persistirlo). El estado
