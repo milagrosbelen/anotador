@@ -10,6 +10,7 @@ import { getFaltanteById } from "../data/faltantes";
 import { useFaltantes } from "../hooks/useFaltantes";
 import { getImagenUri, useConfigStore } from "../store/useConfigStore";
 import { useFotoStore } from "../store/useFotoStore";
+import { useNuevoFaltanteStore } from "../store/useNuevoFaltanteStore";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -70,6 +71,13 @@ export function HomeScreen({ navigation }: Props) {
         <Subtitulo>
           Lo que hay que pedir el lunes.
         </Subtitulo>
+
+        <BotonNuevo accessibilityRole="button" onPress={() => {
+          useNuevoFaltanteStore.getState().setFoto(null);
+          navigation.navigate("CamaraFaltante", { modo: "nuevo" });
+        }}>
+          <TextoNuevo>+ Nuevo faltante</TextoNuevo>
+        </BotonNuevo>
 
         <Resumen>
           {faltantesVisibles.length}{" "}
@@ -147,6 +155,20 @@ const Container = styled.View`
   background-color: #f7f7f5;
   padding-left: 16px;
   padding-right: 16px;
+`;
+
+const BotonNuevo = styled.Pressable`
+  background-color: #5e9b6a;
+  padding: 14px;
+  border-radius: 12px;
+  margin-top: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+`;
+const TextoNuevo = styled.Text`
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
 `;
 
 const Titulo = styled.Text`
