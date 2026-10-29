@@ -1,8 +1,19 @@
 import { Platform } from "react-native";
 import { create } from "zustand";
 
+export type FotoPendiente = {
+  origen: "camara" | "galeria";
+  uri: string;
+  nombre: string;
+  tipo: string;
+};
+
 type FotoState = {
   fotos: Record<number, string>;
+  pendientes: Record<number, FotoPendiente>;
+  setPendiente: (id: number, foto: FotoPendiente) => void;
+  descartarPendiente: (id: number) => void;
+  quitarFotoLocal: (id: number) => void;
   setFoto: (id: number, uri: string) => boolean;
 };
 
@@ -41,6 +52,22 @@ function escribirFotos(fotos: Record<number, string>): boolean {
 
 export const useFotoStore = create<FotoState>((set, get) => ({
   fotos: leerFotos(),
+  pendientes: {},
+  setPendiente: (id, foto) => set({ pendientes: { ...get().pendientes, [id]: foto } }),
+  descartarPendiente: (id) => {
+    const pendientes = { ...get().pendientes };
+    delete pendientes[id];
+    set({ pendientes });
+  },
+  quitarFotoLocal: (id) => {
+    const fotos = { ...get().fotos };
+    delete fotos[id];
+    if (!escribirFotos(fotos) && Platform.OS === "web") {
+      // Evitar restaurar una imagen vieja si el navegador rechaza la escritura.
+      try { localStorage.removeItem(CLAVE); } catch { /* Almacenamiento no disponible. */ }
+    }
+    set({ fotos });
+  },
   setFoto: (id, uri) => {
     const fotos = { ...get().fotos, [id]: uri };
     const pudoGuardar = escribirFotos(fotos);

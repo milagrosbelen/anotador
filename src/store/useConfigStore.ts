@@ -7,10 +7,11 @@ type ConfigState = {
 
 // 10.0.2.2 solo existe dentro del emulador de Android.
 // En el navegador y en el simulador de iOS el backend está en localhost.
-const apiUrl =
+const apiUrl = (process.env.EXPO_PUBLIC_API_URL?.trim() || (
   Platform.OS === "android"
     ? "http://10.0.2.2:5030"
-    : "http://localhost:5030";
+    : "http://localhost:5030"
+)).replace(/\/+$/, "");
 
 export const useConfigStore = create<ConfigState>(() => ({
   apiUrl,

@@ -15,7 +15,8 @@
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -33,9 +34,19 @@
         "expo-image-picker",
         {
           "photosPermission": "Anotador necesita acceder a tus fotos para mostrar una imagen en la ficha del faltante.",
-          "cameraPermission": false
+          "cameraPermission": "Anotador necesita acceder a tu cámara para fotografiar la góndola.",
+          "microphonePermission": false
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Anotador necesita acceder a tu cámara para fotografiar la góndola.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-status-bar"
     ]
   }
 }

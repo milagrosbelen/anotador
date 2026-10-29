@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
+
+import { usePreventRemove } from "@react-navigation/native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { obtenerFaltante, subirFoto } from "../api/fotos";
+import { FaltanteApi } from "../hooks/useFaltantes";
+import { getImagenUri, useConfigStore } from "../store/useConfigStore";
 
 import { RootStackParamList } from "../types";
 import { getFaltanteById } from "../data/faltantes";
@@ -14,43 +20,42 @@ import { mostrarAviso } from "../ui/avisos";
 type Props = NativeStackScreenProps<RootStackParamList, "Detalle">;
 
 export function FaltanteDetalleScreen({ route, navigation }: Props) {
-  const faltante = getFaltanteById(route.params.id);
-  const fotoGuardada = useFotoStore((state) =>
-    faltante ? state.fotos[faltante.id] : undefined
-  );
-  const setFoto = useFotoStore((state) => state.setFoto);
-  const [fotoPendiente, setFotoPendiente] = useState<string | null>(null);
+  const id = route.params.id;
+  const apiUrl = useConfigStore((state) => state.apiUrl);
+  const queryClient = useQueryClient();
+  const detalle = useQuery({
+    queryKey: ["faltante", apiUrl, id],
+    queryFn: () => obtenerFaltante(apiUrl, id),
+    retry: false,
+  });
+  const faltante = detalle.data;
+  const datosLocales = getFaltanteById(id);
+  const fotoGuardada = useFotoStore((state) => state.fotos[id]);
+  const fotoPendiente = useFotoStore((state) => state.pendientes[id]);
+  const { setFoto, setPendiente, descartarPendiente, quitarFotoLocal } = useFotoStore();
   const [eligiendo, setEligiendo] = useState(false);
-  const fotoPendienteRef = useRef<string | null>(null);
-  fotoPendienteRef.current = fotoPendiente;
+  const [guardando, setGuardando] = useState(false);
+  const [actualizacionPendiente, setActualizacionPendiente] = useState(false);
+  const operacion = useRef(false);
+  const preguntando = useRef(false);
 
-  useEffect(() => {
-    const permitirSalir = { listo: false };
-
-    return navigation.addListener("beforeRemove", (event) => {
-      if (permitirSalir.listo || !fotoPendienteRef.current) return;
-
-      event.preventDefault();
-
-      void (async () => {
-        const salir = await mostrarAviso({
-          icono: "warning",
-          titulo: "¿Salir sin guardar?",
-          texto: "Si salís ahora, se vuelve a ver la foto anterior.",
-          confirmar: "Salir",
-          cancelar: "Seguir acá",
-        });
-
-        if (!salir) return;
-
-        permitirSalir.listo = true;
-        navigation.dispatch(event.data.action);
-      })();
-    });
-  }, [navigation]);
+  usePreventRemove(Boolean(fotoPendiente) || guardando, ({ data }) => {
+    if (operacion.current || preguntando.current) return;
+    preguntando.current = true;
+    void mostrarAviso({
+      icono: "warning", titulo: "¿Salir sin guardar?",
+      texto: "Si salís ahora, se vuelve a ver la foto anterior.",
+      confirmar: "Salir", cancelar: "Seguir acá",
+    }).then((salir) => {
+      if (salir) {
+        descartarPendiente(id);
+        navigation.dispatch(data.action);
+      }
+    }).finally(() => { preguntando.current = false; });
+  });
 
   async function elegirDeLaGaleria() {
-    if (!faltante || eligiendo) return;
+    if (!faltante || eligiendo || operacion.current) return;
 
     setEligiendo(true);
     try {
@@ -74,48 +79,81 @@ export function FaltanteDetalleScreen({ route, navigation }: Props) {
         ? `data:${elegida.mimeType ?? "image/jpeg"};base64,${elegida.base64}`
         : elegida.uri;
 
-      setFotoPendiente(uri);
+      setPendiente(id, { origen: "galeria", uri, nombre: elegida.fileName ?? "galeria.jpg", tipo: elegida.mimeType ?? "image/jpeg" });
+    } catch {
+      await mostrarAviso({ icono: "error", titulo: "No se pudo abrir la galería", texto: "Volvé a intentar elegir una foto.", confirmar: "Entendido" });
     } finally {
       setEligiendo(false);
     }
   }
 
-  async function guardarFoto() {
-    if (!faltante || !fotoPendiente) return;
+  async function actualizarFotoRemota() {
+    const actualizado = await obtenerFaltante(apiUrl, id);
+    queryClient.setQueryData(["faltante", apiUrl, id], actualizado);
+    queryClient.setQueryData<FaltanteApi[]>(["faltantes", apiUrl], (lista) =>
+      lista?.map((item) => item.id === id ? actualizado : item)
+    );
+    void queryClient.invalidateQueries({ queryKey: ["faltantes", apiUrl] });
+    setActualizacionPendiente(false);
+  }
 
-    const pudoGuardar = setFoto(faltante.id, fotoPendiente);
-    if (!pudoGuardar) {
-      await mostrarAviso({
-        icono: "error",
-        titulo: "No se pudo guardar",
-        texto: "La foto es demasiado pesada para guardarla en este navegador.",
-        confirmar: "Entendido",
-      });
-      return;
+  async function reintentarActualizacion() {
+    if (operacion.current) return;
+    operacion.current = true;
+    setGuardando(true);
+    try {
+      await actualizarFotoRemota();
+    } catch {
+      await mostrarAviso({ icono: "warning", titulo: "La foto ya está guardada", texto: "Todavía no se pudo actualizar la ficha. Revisá la conexión y reintentá.", confirmar: "Entendido" });
+    } finally {
+      operacion.current = false;
+      setGuardando(false);
     }
+  }
 
-    fotoPendienteRef.current = null;
-    setFotoPendiente(null);
-    await mostrarAviso({
-      icono: "success",
-      titulo: "Foto guardada",
-      texto: "Quedó en la ficha de este faltante. Si salís, se sigue viendo.",
-      confirmar: "Listo",
-    });
+  async function guardarFoto() {
+    if (!faltante || !fotoPendiente || operacion.current) return;
+    operacion.current = true;
+    setGuardando(true);
+    try {
+      if (fotoPendiente.origen === "galeria") {
+        if (!setFoto(id, fotoPendiente.uri)) throw new Error("La foto es demasiado pesada para guardarla en este navegador.");
+        descartarPendiente(id);
+      } else {
+        await subirFoto(apiUrl, id, fotoPendiente);
+        // Desde este punto la subida terminó: los reintentos solo consultan la API.
+        quitarFotoLocal(id);
+        descartarPendiente(id);
+        setActualizacionPendiente(true);
+        try {
+          await actualizarFotoRemota();
+        } catch {
+          await mostrarAviso({ icono: "warning", titulo: "Foto guardada en el servidor", texto: "No se pudo actualizar la ficha. Usá Actualizar foto para volver a consultar sin subirla otra vez.", confirmar: "Entendido" });
+          return;
+        }
+      }
+      await mostrarAviso({ icono: "success", titulo: "Foto guardada", texto: fotoPendiente.origen === "camara" ? "Quedó guardada en el servidor y en la ficha de este faltante." : "Quedó guardada localmente en la ficha de este faltante.", confirmar: "Listo" });
+    } catch (error) {
+      await mostrarAviso({ icono: "error", titulo: "No se pudo guardar", texto: error instanceof Error ? error.message : "Revisá la conexión y volvé a intentar.", confirmar: "Entendido" });
+    } finally {
+      operacion.current = false;
+      setGuardando(false);
+    }
   }
 
   if (!faltante) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F5" }} edges={["bottom"]}>
         <Contenedor>
-          <Nombre>No encontramos ese faltante.</Nombre>
+          <Nombre>{detalle.isPending ? "Cargando faltante..." : detalle.error?.message ?? "No encontramos ese faltante."}</Nombre>
+          {detalle.isError ? <BotonGaleria onPress={() => void detalle.refetch()}><BotonGaleriaTexto>Reintentar</BotonGaleriaTexto></BotonGaleria> : null}
         </Contenedor>
       </SafeAreaView>
     );
   }
 
   const estaPedido = faltante.estado === "Ya pedido";
-  const fotoVisible = fotoPendiente ?? fotoGuardada;
+  const fotoVisible = fotoPendiente?.uri ?? fotoGuardada ?? getImagenUri(apiUrl, faltante.imagenUrl);
 
   return (
     <SafeAreaView
@@ -125,15 +163,23 @@ export function FaltanteDetalleScreen({ route, navigation }: Props) {
       <Scroll showsVerticalScrollIndicator={false}>
         <Imagen
           key={fotoVisible ?? "foto-del-producto"}
-          source={fotoVisible ? { uri: fotoVisible } : faltante.imagen}
+          source={fotoVisible ? { uri: fotoVisible } : datosLocales?.imagen ?? require("../../assets/icon.png")}
           resizeMode="cover"
         />
 
         <Contenedor>
           <FilaBotones>
             <BotonGaleria
+              onPress={() => navigation.navigate("CamaraFaltante", { id })}
+              disabled={eligiendo || guardando || actualizacionPendiente}
+              accessibilityRole="button"
+              accessibilityLabel="Sacar foto de la góndola"
+            >
+              <BotonGaleriaTexto>Sacar foto de la góndola</BotonGaleriaTexto>
+            </BotonGaleria>
+            <BotonGaleria
               onPress={elegirDeLaGaleria}
-              disabled={eligiendo}
+              disabled={eligiendo || guardando || actualizacionPendiente}
               accessibilityRole="button"
               accessibilityLabel="Elegir de la galería"
             >
@@ -144,14 +190,23 @@ export function FaltanteDetalleScreen({ route, navigation }: Props) {
 
             <BotonGuardar
               onPress={guardarFoto}
-              disabled={!fotoPendiente}
-              $listo={Boolean(fotoPendiente)}
+              disabled={!fotoPendiente || guardando || eligiendo}
+              $listo={Boolean(fotoPendiente) && !guardando && !eligiendo}
               accessibilityRole="button"
               accessibilityLabel="Guardar"
             >
-              <BotonGuardarTexto>Guardar</BotonGuardarTexto>
+              <BotonGuardarTexto>{guardando ? "Guardando..." : "Guardar"}</BotonGuardarTexto>
             </BotonGuardar>
           </FilaBotones>
+
+          {actualizacionPendiente ? (
+            <Seccion>
+              <Valor>La foto está guardada en el servidor. Falta actualizar la imagen de la ficha.</Valor>
+              <BotonGaleria disabled={guardando} onPress={reintentarActualizacion}>
+                <BotonGaleriaTexto>{guardando ? "Actualizando..." : "Actualizar foto"}</BotonGaleriaTexto>
+              </BotonGaleria>
+            </Seccion>
+          ) : null}
 
           <FilaEncabezado>
             <Nombre>{faltante.nombre}</Nombre>
@@ -174,19 +229,19 @@ export function FaltanteDetalleScreen({ route, navigation }: Props) {
 
           <Seccion>
             <Etiqueta>Dónde está</Etiqueta>
-            <Valor>{faltante.ubicacion}</Valor>
+            {datosLocales?.ubicacion ? <Valor>{datosLocales.ubicacion}</Valor> : null}
 
             <UbicacionLocal />
           </Seccion>
 
-          <Seccion>
+          {datosLocales?.prioridad ? <Seccion>
             <Etiqueta>Prioridad</Etiqueta>
-            <Valor>{faltante.prioridad}</Valor>
-          </Seccion>
+            <Valor>{datosLocales.prioridad}</Valor>
+          </Seccion> : null}
 
           <Seccion>
             <Etiqueta>Nota del local</Etiqueta>
-            <Valor>{faltante.nota}</Valor>
+            <Valor>{faltante.nota || "Sin nota"}</Valor>
           </Seccion>
         </Contenedor>
       </Scroll>
@@ -246,6 +301,7 @@ const Contenedor = styled.View`
 
 const FilaBotones = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 18px;
 `;
