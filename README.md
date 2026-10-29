@@ -27,8 +27,9 @@ de 4 features.
 | Consultar la ficha de un faltante | Implementada |
 | Filtrar faltantes por proveedor | Implementada |
 | Elegir una foto de la galería | Implementada |
+| sacar una foto | Implementada |
 | Registrar la ubicación GPS del local | Implementada |
-| Marcar un faltante como ya pedido | Pendiente |
+| Marcar un faltante como ya pedido | Implementada |
 
 **Consultar el listado de faltantes.** La Home muestra los productos que
 hay que pedir, con imagen, cantidad, proveedor y estado.
